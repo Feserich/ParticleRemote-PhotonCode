@@ -37,7 +37,7 @@ void setup()
     Serial.begin(9600);
 
     //Comment the lower line if no DHT Sesnsor is used
-    //readDHT22timer.start();
+    readDHT22timer.start();
 }
 
 
