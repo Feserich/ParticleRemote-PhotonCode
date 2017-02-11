@@ -18,8 +18,6 @@ Timer readDHT22timer(5000, getDHT22values);
 // Lib instantiate
 PietteTech_DHT DHT(DHTPIN, DHTTYPE);
 
-//global variables
-unsigned long lastTime = 0;
 
 //Cloud Variable
 double tempCloud = -1;
@@ -121,6 +119,7 @@ int setTemperatureHoneywell(String command)
 
 int sendToHoneywell(String command)
 {
+  unsigned long lastTime = 0;
   char readBuf[READ_BUF_SIZE];
   size_t readBufOffset = 0;
   bool responseComplete = false;
@@ -207,7 +206,7 @@ int toggleRelay(String command)
       pinMode(pinNumber, OUTPUT);
       digitalWrite(pinNumber, value);
 
-      //start a timer interrupt then return 1 (before interrupt execution)
+      //TODO: start a timer interrupt then return 1 (before interrupt execution)
       if (toggleTime>0)
       {
 
