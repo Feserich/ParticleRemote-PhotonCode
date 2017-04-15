@@ -2,7 +2,7 @@
 #include "PietteTech_DHT.h"  // Uncommend if building using CLI
 
 #define DHTTYPE  DHT22       // Sensor type DHT11/21/22/AM2301/AM2302
-#define DHTPIN   0           // Digital pin for communications
+#define DHTPIN   6           // Digital pin for communications  (D0 and A5 aren't working for Photon)
 
 //Constants
 const size_t READ_BUF_SIZE = 64;
@@ -46,9 +46,14 @@ void loop()
 
 void getDHT22values (){
 
+  Serial.println("DHT read start");
+
+
+
   //TODO: catch DHT errors and stop timer? or ignore all error?
 
   int result = DHT.acquireAndWait();
+  Serial.println(result);
 
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
