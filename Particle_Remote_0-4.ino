@@ -2,17 +2,20 @@
 #include "PietteTech_DHT.h"  // Uncommend if building using CLI
 
 #define DHTTYPE  DHT22       // Sensor type DHT11/21/22/AM2301/AM2302
-#define DHTPIN   0           // Digital pin for communications
+#define DHTPIN   6           // Digital pin for communications
 
 //Constants
 const size_t READ_BUF_SIZE = 64;
 const unsigned long RESPONSE_TIMEOUT = 10000;
+const size_t RECORD_ARRAY_SIZE = 150;
 
 //declaration
 int toggleRelay(String command);
 int setTemperatureHoneywell(String command);
 int sendToHoneywell(String command);
-Timer readDHT22timer(5000, getDHT22values);
+void recordTempAndHumi();
+Timer readDHT22timer(3000, getDHT22values);
+
 
 
 // Lib instantiate
@@ -24,6 +27,10 @@ unsigned long lastTime = 0;
 //Cloud Variable
 double tempCloud = -1;
 double humiCloud = -1;
+
+int tempArray[RECORD_ARRAY_SIZE];
+String tempValuesChain;
+int arrayPointer = 0;
 
 
 void setup()
@@ -37,12 +44,50 @@ void setup()
     Serial.begin(9600);
 
     //Comment the lower line if no DHT Sesnsor is used
-    //readDHT22timer.start();
+    readDHT22timer.start();
 }
 
 
 void loop()
 {
+
+
+}
+
+void recordTempAndHumi(){
+
+  Serial.println("Test");
+
+  tempArray[arrayPointer] = (int) tempCloud;
+
+  //the temporary array pointer is needed and changed in the following for loop
+  int loopArrayPointer = arrayPointer;
+
+  //this loop adds the values of the tempArray to the tempValueChain String, from newest to oldest
+  for (int i=0; i<(sizeof(tempArray)/sizeof(tempArray[0])); i++){
+    tempValuesChain += String(tempArray[loopArrayPointer]);
+    tempValuesChain += ";";
+
+    if (loopArrayPointer == 0){
+      loopArrayPointer = (RECORD_ARRAY_SIZE - 1);
+    }
+    else{
+      loopArrayPointer--;
+    }
+  }
+
+  Serial.println(tempValuesChain);
+
+  //TODO: publish the the tempValuesChain as a Particle Cloud Variable
+
+
+  //reset the arrayPointer if it reaches the array size. => overwrite the oldest values in the array
+  if (arrayPointer < (RECORD_ARRAY_SIZE - 1)){
+    arrayPointer++;
+  }
+  else{
+    arrayPointer = 0;
+  }
 
 }
 
@@ -55,6 +100,7 @@ void getDHT22values (){
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
 
+  //recordTempAndHumi();
 
 }
 
@@ -177,6 +223,8 @@ int sendToHoneywell(String command)
 
 int toggleRelay(String command)
 {
+
+  Serial.printlnf("command: " +  command);
   bool value = 0;
   int toggleTime = 0;
 
