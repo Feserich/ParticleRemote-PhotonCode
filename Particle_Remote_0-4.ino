@@ -2,7 +2,11 @@
 #include "PietteTech_DHT.h"  // Uncommend if building using CLI
 
 #define DHTTYPE  DHT22       // Sensor type DHT11/21/22/AM2301/AM2302
+<<<<<<< HEAD
 #define DHTPIN   6           // Digital pin for communications
+=======
+#define DHTPIN   6           // Digital pin for communications  (D0 and A5 aren't working for Photon)
+>>>>>>> origin/master
 
 //Constants
 const size_t READ_BUF_SIZE = 64;
@@ -21,8 +25,6 @@ Timer readDHT22timer(3000, getDHT22values);
 // Lib instantiate
 PietteTech_DHT DHT(DHTPIN, DHTTYPE);
 
-//global variables
-unsigned long lastTime = 0;
 
 //Cloud Variable
 double tempCloud = -1;
@@ -93,9 +95,14 @@ void recordTempAndHumi(){
 
 void getDHT22values (){
 
+  Serial.println("DHT read start");
+
+
+
   //TODO: catch DHT errors and stop timer? or ignore all error?
 
   int result = DHT.acquireAndWait();
+  Serial.println(result);
 
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
@@ -167,6 +174,7 @@ int setTemperatureHoneywell(String command)
 
 int sendToHoneywell(String command)
 {
+  unsigned long lastTime = 0;
   char readBuf[READ_BUF_SIZE];
   size_t readBufOffset = 0;
   bool responseComplete = false;
@@ -255,7 +263,7 @@ int toggleRelay(String command)
       pinMode(pinNumber, OUTPUT);
       digitalWrite(pinNumber, value);
 
-      //start a timer interrupt then return 1 (before interrupt execution)
+      //TODO: start a timer interrupt then return 1 (before interrupt execution)
       if (toggleTime>0)
       {
 
