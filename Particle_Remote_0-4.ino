@@ -2,11 +2,9 @@
 #include "PietteTech_DHT.h"  // Uncommend if building using CLI
 
 #define DHTTYPE  DHT22       // Sensor type DHT11/21/22/AM2301/AM2302
-<<<<<<< HEAD
-#define DHTPIN   6           // Digital pin for communications
-=======
+
 #define DHTPIN   6           // Digital pin for communications  (D0 and A5 aren't working for Photon)
->>>>>>> origin/master
+
 
 //Constants
 const size_t READ_BUF_SIZE = 64;
@@ -33,6 +31,7 @@ double humiCloud = -1;
 int tempArray[RECORD_ARRAY_SIZE];
 String tempValuesChain;
 int arrayPointer = 0;
+bool isRecordArrayFull = false;
 
 
 void setup()
@@ -58,15 +57,37 @@ void loop()
 
 void recordTempAndHumi(){
 
-  Serial.println("Test");
+  int arrayValueCount = 0;
+
+  if (isRecordArrayFull) arrayValueCount = 150;
+  else arrayValueCount = arrayPointer;
+
+  Serial.println("Start record function");
 
   tempArray[arrayPointer] = (int) tempCloud;
+
+  Serial.print("Array Pointer: ");
+  Serial.println(arrayPointer);
 
   //the temporary array pointer is needed and changed in the following for loop
   int loopArrayPointer = arrayPointer;
 
+  Serial.print("Array Size: ");
+  Serial.println(sizeof(tempArray));
+
+  Serial.print("Array count : ");
+  Serial.println(sizeof(tempArray)/sizeof(tempArray[0]));
+
+  Serial.print("Array value Count : ");
+  Serial.println(arrayValueCount);
+
+
+
+  //delete the old values in the String
+  tempValuesChain = "";
+
   //this loop adds the values of the tempArray to the tempValueChain String, from newest to oldest
-  for (int i=0; i<(sizeof(tempArray)/sizeof(tempArray[0])); i++){
+  for (int i=0; i<arrayValueCount; i++){
     tempValuesChain += String(tempArray[loopArrayPointer]);
     tempValuesChain += ";";
 
@@ -89,25 +110,26 @@ void recordTempAndHumi(){
   }
   else{
     arrayPointer = 0;
+    isRecordArrayFull = true;
   }
 
 }
 
 void getDHT22values (){
 
-  Serial.println("DHT read start");
+
 
 
 
   //TODO: catch DHT errors and stop timer? or ignore all error?
 
   int result = DHT.acquireAndWait();
-  Serial.println(result);
+  //Serial.println(result);
 
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
 
-  //recordTempAndHumi();
+  recordTempAndHumi();
 
 }
 
