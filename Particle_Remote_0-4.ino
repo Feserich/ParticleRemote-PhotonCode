@@ -1,23 +1,22 @@
 //#include "DHT22_test/PietteTech_DHT.h"  // Uncomment if building in IDE
 #include "PietteTech_DHT.h"  // Uncommend if building using CLI
 
+//Define
 #define DHTTYPE  DHT22       // Sensor type DHT11/21/22/AM2301/AM2302
-
 #define DHTPIN   6           // Digital pin for communications  (D0 and A5 aren't working for Photon)
 
 
 //Constants
 const size_t READ_BUF_SIZE = 64;
 const unsigned long RESPONSE_TIMEOUT = 10000;
-const size_t RECORD_ARRAY_SIZE = 150;
+const size_t RECORD_ARRAY_SIZE = 150;               //cloud variable max. 622 Bytes = 622 char => 3 digits + delimiter (;) = 150 values
 
 //declaration
 int toggleRelay(String command);
 int setTemperatureHoneywell(String command);
 int sendToHoneywell(String command);
-void recordTempAndHumi();
-Timer readDHT22timer(3000, getDHT22values);
-
+Timer readDHT22Timer(5000, getDHT22values);                     //refresh the local variables
+Timer recordTempAndHumiTimer(1*3600000, recordTempAndHumi);     //store the values every hour => 150h = 6,25d
 
 
 // Lib instantiate
@@ -27,9 +26,12 @@ PietteTech_DHT DHT(DHTPIN, DHTTYPE);
 //Cloud Variable
 double tempCloud = -1;
 double humiCloud = -1;
+String temperatureValuesChain = "";
+String humidityValuesChain = "";
 
-int tempArray[RECORD_ARRAY_SIZE];
-String tempValuesChain;
+//Global variables
+int temperatureRecordArray[RECORD_ARRAY_SIZE];
+int humidityRecordArray[RECORD_ARRAY_SIZE];
 int arrayPointer = 0;
 bool isRecordArrayFull = false;
 
@@ -38,6 +40,9 @@ void setup()
 {
     Particle.variable("temperature", tempCloud);
     Particle.variable("humidity", humiCloud);
+    Particle.variable("tempRec", temperatureValuesChain);
+    Particle.variable("humiRec", humidityValuesChain);
+
     Particle.function("toggleRelay", toggleRelay);
     Particle.function("setTempHoney", setTemperatureHoneywell);
 
@@ -45,7 +50,8 @@ void setup()
     Serial.begin(9600);
 
     //Comment the lower line if no DHT Sesnsor is used
-    readDHT22timer.start();
+    readDHT22Timer.start();
+    recordTempAndHumiTimer.start();
 }
 
 
@@ -57,70 +63,71 @@ void loop()
 
 void recordTempAndHumi(){
 
-  int arrayValueCount = 0;
+  int arrayValueQuantity = 0;
 
-  if (isRecordArrayFull) arrayValueCount = 150;
-  else arrayValueCount = arrayPointer;
+  if (isRecordArrayFull) arrayValueQuantity = 150;
+  else arrayValueQuantity = arrayPointer;
 
-  Serial.println("Start record function");
+  double tempCloudOffset = tempCloud * 10;                     //Offset! multiply by 10 to get higher precision
 
-  tempArray[arrayPointer] = (int) tempCloud;
+  //add the local variable value to the array
+  temperatureRecordArray[arrayPointer] = (int) (tempCloudOffset);
+  humidityRecordArray[arrayPointer] = (int) humiCloud;
+
 
   Serial.print("Array Pointer: ");
   Serial.println(arrayPointer);
 
+  Serial.print("Array value Count : ");
+  Serial.println(arrayValueQuantity);
+
+
   //the temporary array pointer is needed and changed in the following for loop
   int loopArrayPointer = arrayPointer;
 
-  Serial.print("Array Size: ");
-  Serial.println(sizeof(tempArray));
-
-  Serial.print("Array count : ");
-  Serial.println(sizeof(tempArray)/sizeof(tempArray[0]));
-
-  Serial.print("Array value Count : ");
-  Serial.println(arrayValueCount);
-
-
-
   //delete the old values in the String
-  tempValuesChain = "";
+  temperatureValuesChain = "";
+  humidityValuesChain = "";
 
-  //this loop adds the values of the tempArray to the tempValueChain String, from newest to oldest
-  for (int i=0; i<arrayValueCount; i++){
-    tempValuesChain += String(tempArray[loopArrayPointer]);
-    tempValuesChain += ";";
+  //this loop adds the values of the Record Arrays to the ValueChain Strings, ordered from newest to oldest values
+  for (int i=0; i<arrayValueQuantity; i++){
+    temperatureValuesChain += String(temperatureRecordArray[loopArrayPointer]);
+    temperatureValuesChain += ";";
+    humidityValuesChain += String(humidityRecordArray[loopArrayPointer]);
+    humidityValuesChain += ";";
+
 
     if (loopArrayPointer == 0){
-      loopArrayPointer = (RECORD_ARRAY_SIZE - 1);
+      loopArrayPointer = (RECORD_ARRAY_SIZE - 1);       //continue from the array end
     }
     else{
       loopArrayPointer--;
     }
   }
 
-  Serial.println(tempValuesChain);
+  Serial.print("String size temp: ");
+  Serial.println(sizeof(temperatureValuesChain));
 
-  //TODO: publish the the tempValuesChain as a Particle Cloud Variable
+  Serial.print("String size humi: ");
+  Serial.println(sizeof(humidityValuesChain));
 
 
-  //reset the arrayPointer if it reaches the array size. => overwrite the oldest values in the array
+  Serial.println(temperatureValuesChain);
+  Serial.println(humidityValuesChain);
+
+
+  //increase the arrayPointer till it reaches the array end, then reset the arrayPointer =>  overwrite the oldest values in the array
   if (arrayPointer < (RECORD_ARRAY_SIZE - 1)){
     arrayPointer++;
   }
   else{
     arrayPointer = 0;
-    isRecordArrayFull = true;
+    isRecordArrayFull = true;                     //array is full with relevant values
   }
 
 }
 
 void getDHT22values (){
-
-
-
-
-
   //TODO: catch DHT errors and stop timer? or ignore all error?
 
   int result = DHT.acquireAndWait();
@@ -130,7 +137,6 @@ void getDHT22values (){
   humiCloud = (double) DHT.getHumidity();
 
   recordTempAndHumi();
-
 }
 
 
