@@ -24,8 +24,8 @@ PietteTech_DHT DHT(DHTPIN, DHTTYPE);
 
 
 //Cloud Variable
-double tempCloud = -1;
-double humiCloud = -1;
+double tempCloud = -100;
+double humiCloud = -100;
 String temperatureValuesChain = "";
 String humidityValuesChain = "";
 
@@ -135,8 +135,6 @@ void getDHT22values (){
 
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
-
-  recordTempAndHumi();
 }
 
 
