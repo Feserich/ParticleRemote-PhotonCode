@@ -105,6 +105,10 @@ void recordTempAndHumi(){
     }
   }
 
+  //add a timestamp to last value of humidity (humidityValuesChain has fewer bytes, only 2 digits)
+  humidityValuesChain += String(Time.now());
+  humidityValuesChain += ";";
+
   Serial.print("String size temp: ");
   Serial.println(sizeof(temperatureValuesChain));
 
