@@ -16,7 +16,7 @@ int toggleRelay(String command);
 int setTemperatureHoneywell(String command);
 int sendToHoneywell(String command);
 Timer readDHT22Timer(5000, getDHT22values);                     //refresh the local variables
-Timer recordTempAndHumiTimer(1*3600000, recordTempAndHumi);     //store the values every hour => 150h = 6,25d
+Timer recordTempAndHumiTimer(1*1800000, recordTempAndHumi);     //store the values every half hour => 75h = 3,125d
 
 
 // Lib instantiate
@@ -28,6 +28,7 @@ double tempCloud = -100;
 double humiCloud = -100;
 String temperatureValuesChain = "";
 String humidityValuesChain = "";
+
 
 //Global variables
 int temperatureRecordArray[RECORD_ARRAY_SIZE];
