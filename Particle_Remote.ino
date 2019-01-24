@@ -1,5 +1,7 @@
 //#include "DHT22_test/PietteTech_DHT.h"  // Uncomment if building in IDE
 #include "PietteTech_DHT.h"  // Uncommend if building using CLI
+#include <stdio.h>
+#include <stdlib.h>
 
 //Define
 #define DHTTYPE  DHT22       // Sensor type DHT11/21/22/AM2301/AM2302
@@ -15,8 +17,10 @@ const size_t RECORD_ARRAY_SIZE = 150;               //cloud variable max. 622 By
 int toggleRelay(String command);
 int setTemperatureHoneywell(String command);
 int sendToHoneywell(String command);
+
 Timer readDHT22Timer(5000, getDHT22values);                     //refresh the local variables
 Timer recordTempAndHumiTimer(1*1800000, recordTempAndHumi);     //store the values every half hour => 75h = 3,125d
+Timer setFuturTemperatureHoneywellTimer(100000, setFuturTemperatureHoneywellTimerCallback, true);
 
 
 // Lib instantiate
@@ -28,6 +32,7 @@ double tempCloud = -100;
 double humiCloud = -100;
 String temperatureValuesChain = "";
 String humidityValuesChain = "";
+String setFuturTemperatureCommand = "";
 
 
 //Global variables
@@ -46,6 +51,7 @@ void setup()
 
     Particle.function("toggleRelay", toggleRelay);
     Particle.function("setTempHoney", setTemperatureHoneywell);
+    Particle.function("setTempFut", setFuturTemperatureHoneywell);
 
     Serial1.begin(2400, SERIAL_8E1);
     Serial.begin(9600);
@@ -170,11 +176,22 @@ int setTemperatureHoneywell(String command)
     Serial1.read();																		           	//delete response from empty commands
   }
 
+  int numberOfTries = 3;
+  int DisplayResponse;
+  int MotorResponse;
 
-  //send both commands to Honeywell
-  int DisplayResponse = sendToHoneywell(writeDisplayRAM);
-  delay(20);                                                    //delay for Honeywell to processing the command
-  int MotorResponse = sendToHoneywell(writeMotorRam);
+  //try multiple times if failed
+  do
+  {
+    //send both commands to Honeywell
+    DisplayResponse = sendToHoneywell(writeDisplayRAM);
+    delay(20);                                                    //delay for Honeywell to processing the command
+    MotorResponse = sendToHoneywell(writeMotorRam);
+    delay(20);  
+    numberOfTries--;
+
+  }while( (DisplayResponse != 1 || MotorResponse != 1) && numberOfTries > 0);
+
 
 
   //check if execution was successfull
@@ -325,4 +342,31 @@ int toggleRelay(String command)
 
       return 1;
   }
+}
+
+int setFuturTemperatureHoneywell(String command)
+{
+
+  char targetTemp[32];
+  char minutesTillHeatingStart[32];
+  unsigned int millisecondsTillHeatingStart;
+
+  sscanf(command, "%[^;];%[^;];", targetTemp, minutesTillHeatingStart);
+
+  millisecondsTillHeatingStart = ((unsigned int)strtoul(minutesTillHeatingStart, NULL, 0))*60000;
+ 
+  setFuturTemperatureCommand = targetTemp;
+
+  setFuturTemperatureHoneywellTimer.changePeriod(millisecondsTillHeatingStart);
+  setFuturTemperatureHoneywellTimer.start();
+}
+
+void setFuturTemperatureHoneywellTimerCallback(void)
+{
+  //this function is called when timer is expired
+
+  (void)setTemperatureHoneywell(setFuturTemperatureCommand);
+
+  //stopping timer is maybe not needed, because Timer is initialized as an oneShot timer
+  setFuturTemperatureHoneywellTimer.stop();
 }
