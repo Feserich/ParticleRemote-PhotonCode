@@ -151,8 +151,27 @@ void getDHT22values (){
 
 int setTemperatureHoneywell(String command)
 {
+  String automaticFlag = "x";
+  String targetTempStr = "x";
+  int targetTemp;
+  int delimeterIndex;
 
-  int targetTemp = command.toInt();                               //Unit is 1/10° C
+  delimeterIndex = command.lastIndexOf(",");
+
+  if(delimeterIndex == -1)
+  {
+    Serial.println("ERROR!");
+  }
+  else {
+    automaticFlag = command.substring(delimeterIndex + 1, delimeterIndex + 2);
+    targetTempStr = command.substring(0, delimeterIndex);
+    targetTemp = atoi(targetTempStr);
+  }
+
+  Serial.println(targetTemp);
+  Serial.println(automaticFlag);
+
+  //targetTemp = targetTempStr.toInt();                               //Unit is 1/10° C
   int targetTempOffset = targetTemp - 60;                         //Offset is 60 (=6° C), Unit is 1/10° C
   String writeDisplayRAM = "W13600";                              //0x136 is the memory location of the target Temperature on the Display
   String writeMotorRam = "W20c10";                                //0x20c is the memory location of the target temperatur for the DC Motor
@@ -183,6 +202,16 @@ int setTemperatureHoneywell(String command)
   //try multiple times if failed
   do
   {
+    //set automatic mode 
+    if(automaticFlag.equals("A")){
+      sendToHoneywell("W12b0010");
+    }
+    //set manual mode 
+    else if (automaticFlag.equals("M")){
+      sendToHoneywell("W12b0000");
+    }
+    delay(20); 
+
     //send both commands to Honeywell
     DisplayResponse = sendToHoneywell(writeDisplayRAM);
     delay(20);                                                    //delay for Honeywell to processing the command
@@ -350,6 +379,8 @@ int setFuturTemperatureHoneywell(String command)
   char targetTemp[32];
   char minutesTillHeatingStart[32];
   unsigned int millisecondsTillHeatingStart;
+
+  Serial.println(command);
 
   sscanf(command, "%[^;];%[^;];", targetTemp, minutesTillHeatingStart);
 
