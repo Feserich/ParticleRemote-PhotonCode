@@ -17,9 +17,13 @@ const size_t RECORD_ARRAY_SIZE = 150;               //cloud variable max. 622 By
 int toggleRelay(String command);
 int setTemperatureHoneywell(String command);
 int sendToHoneywell(String command);
+void getDHT22values(void);
+void getDHT22valuesTimerCallback(void);
+void recordTempAndHumiTimerCallback(void);
 
-Timer readDHT22Timer(5000, getDHT22values);                     //refresh the local variables
-Timer recordTempAndHumiTimer(1*1800000, recordTempAndHumi);     //store the values every half hour => 75h = 3,125d
+
+Timer readDHT22Timer(5000, getDHT22valuesTimerCallback);                     //refresh the local variables
+Timer recordTempAndHumiTimer(1*1800000, recordTempAndHumiTimerCallback);     //store the values every half hour => 75h = 3,125d
 Timer setFuturTemperatureHoneywellTimer(100000, setFuturTemperatureHoneywellTimerCallback, true);
 
 
@@ -39,7 +43,10 @@ String setFuturTemperatureCommand = "";
 int temperatureRecordArray[RECORD_ARRAY_SIZE];
 int humidityRecordArray[RECORD_ARRAY_SIZE];
 int arrayPointer = 0;
-bool isRecordArrayFull = false;
+boolean isRecordArrayFull = false;
+boolean readTemperatureFlag = false;
+boolean recordTemperatureFlag = false;
+boolean setFutureTemperatureFlag = false;
 
 
 void setup()
@@ -55,6 +62,7 @@ void setup()
 
     Serial1.begin(2400, SERIAL_8E1);
     Serial.begin(9600);
+    DHT.begin();
 
     //Comment the lower line if no DHT Sesnsor is used
     readDHT22Timer.start();
@@ -64,8 +72,49 @@ void setup()
 
 void loop()
 {
+  if(readTemperatureFlag == true)
+  {
+    getDHT22values(); 
+    readTemperatureFlag = false;
+  }
+
+  if(recordTemperatureFlag == true)
+  {
+    recordTempAndHumi();
+    humiCloud = 6.0;
+    recordTemperatureFlag = false;
+  }
+
+  if(setFutureTemperatureFlag == true)
+  {
+    (void)setTemperatureHoneywell(setFuturTemperatureCommand);
+    setFutureTemperatureFlag = false;
+  }
+}
+
+void getDHT22valuesTimerCallback ()
+{
+  //humiCloud = readTemperatureFlag;
+  readTemperatureFlag = true;
+}
+
+void getDHT22values (){
+  //TODO: catch DHT errors and stop timer? or ignore all error?
+
+  humiCloud = 800.0;
+  int result = DHT.acquireAndWait(1000);
+  //Serial.println(result);
+  humiCloud = result;
+
+  tempCloud = (double) DHT.getCelsius();
+  humiCloud = (double) DHT.getHumidity();
+}
 
 
+void recordTempAndHumiTimerCallback()
+{
+  
+  recordTemperatureFlag = true;
 }
 
 void recordTempAndHumi(){
@@ -138,15 +187,6 @@ void recordTempAndHumi(){
 
 }
 
-void getDHT22values (){
-  //TODO: catch DHT errors and stop timer? or ignore all error?
-
-  int result = DHT.acquireAndWait();
-  //Serial.println(result);
-
-  tempCloud = (double) DHT.getCelsius();
-  humiCloud = (double) DHT.getHumidity();
-}
 
 
 int setTemperatureHoneywell(String command)
@@ -394,9 +434,8 @@ int setFuturTemperatureHoneywell(String command)
 
 void setFuturTemperatureHoneywellTimerCallback(void)
 {
-  //this function is called when timer is expired
-
-  (void)setTemperatureHoneywell(setFuturTemperatureCommand);
+  //set this flag and in the loop-function setting the future temperature will be done.  
+  setFutureTemperatureFlag = true;
 
   //stopping timer is maybe not needed, because Timer is initialized as an oneShot timer
   setFuturTemperatureHoneywellTimer.stop();

@@ -1,6 +1,6 @@
 {
     "particle.targetDevice": "room_automation",
-    "particle.firmwareVersion": "1.0.1",
+    "particle.firmwareVersion": "1.3.1",
     "particle.targetPlatform": "photon",
     "cortex-debug.openocdPath": "/home/faraday/.particle/toolchains/openocd/0.10.0-particle.1/bin/openocd",
     "C_Cpp.default.configurationProvider": "particle.particle-vscode-core"
