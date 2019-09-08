@@ -81,7 +81,6 @@ void loop()
   if(recordTemperatureFlag == true)
   {
     recordTempAndHumi();
-    humiCloud = 6.0;
     recordTemperatureFlag = false;
   }
 
@@ -94,17 +93,15 @@ void loop()
 
 void getDHT22valuesTimerCallback ()
 {
-  //humiCloud = readTemperatureFlag;
+  //set flag and check if it is true in the loop-function --> short ISR
   readTemperatureFlag = true;
 }
 
-void getDHT22values (){
+void getDHT22values ()
+{
   //TODO: catch DHT errors and stop timer? or ignore all error?
-
-  humiCloud = 800.0;
   int result = DHT.acquireAndWait(1000);
   //Serial.println(result);
-  humiCloud = result;
 
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
@@ -113,7 +110,7 @@ void getDHT22values (){
 
 void recordTempAndHumiTimerCallback()
 {
-  
+  //set flag and check if it is true in the loop-function --> short ISR
   recordTemperatureFlag = true;
 }
 
@@ -186,7 +183,6 @@ void recordTempAndHumi(){
   }
 
 }
-
 
 
 int setTemperatureHoneywell(String command)
@@ -434,7 +430,7 @@ int setFuturTemperatureHoneywell(String command)
 
 void setFuturTemperatureHoneywellTimerCallback(void)
 {
-  //set this flag and in the loop-function setting the future temperature will be done.  
+  //set flag and check if it is true in the loop-function --> short ISR
   setFutureTemperatureFlag = true;
 
   //stopping timer is maybe not needed, because Timer is initialized as an oneShot timer
