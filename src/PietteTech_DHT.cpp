@@ -203,7 +203,7 @@ void PietteTech_DHT::_isrCallback() {
       
 // --------------- issue: https://github.com/particle-iot/device-os/issues/1654 -----------------
 //    } if (125 < delta && delta < 200) { // originally 
-    } if (125 < delta && delta < 220) {   // account for timing offset with Particle Mesh devices
+    } if (125 < delta && delta < 200) {   // account for timing offset with Particle Mesh devices
 // ----------------------------------------------------------------------------------------------
 
 #if defined(DHT_DEBUG_TIMING)

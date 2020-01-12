@@ -17,6 +17,7 @@ $RECYCLE.BIN/
 #Particle Firmware
 photon_firmware*.bin
 electron_firmware*.bin
+/target/
 
 # Windows shortcuts
 *.lnk
