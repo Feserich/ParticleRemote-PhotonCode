@@ -34,9 +34,11 @@ PietteTech_DHT DHT(DHTPIN, DHTTYPE);
 //Cloud Variable
 double tempCloud = -100;
 double humiCloud = -100;
+String lastHoneywellCmd = "";
 String temperatureValuesChain = "";
 String humidityValuesChain = "";
 String setFuturTemperatureCommand = "";
+int DhtResultVal;
 
 
 //Global variables
@@ -55,6 +57,8 @@ void setup()
     Particle.variable("humidity", humiCloud);
     Particle.variable("tempRec", temperatureValuesChain);
     Particle.variable("humiRec", humidityValuesChain);
+    Particle.variable("DHTresult", DhtResultVal);
+    Particle.variable("lastCmd", lastHoneywellCmd);
 
     Particle.function("toggleRelay", toggleRelay);
     Particle.function("setTempHoney", setTemperatureHoneywell);
@@ -100,11 +104,16 @@ void getDHT22valuesTimerCallback ()
 void getDHT22values ()
 {
   //TODO: catch DHT errors and stop timer? or ignore all error?
-  int result = DHT.acquireAndWait(1000);
+  int DhtResultVal = DHT.acquireAndWait(2000);
   //Serial.println(result);
 
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
+
+  if(tempCloud == DHTLIB_ERROR_ACQUIRING && humiCloud == DHTLIB_ERROR_ACQUIRING)
+  {
+    DHT.begin();
+  }
 }
 
 
@@ -189,10 +198,11 @@ int setTemperatureHoneywell(String command)
 {
   String automaticFlag = "x";
   String targetTempStr = "x";
-  int targetTemp;
+  int targetTemp = 0;
   int delimeterIndex;
 
   delimeterIndex = command.lastIndexOf(",");
+  lastHoneywellCmd = command;
 
   if(delimeterIndex == -1)
   {

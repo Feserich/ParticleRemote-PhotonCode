@@ -2,7 +2,7 @@
 //       THIS IS A GENERATED FILE - DO NOT EDIT       //
 /******************************************************/
 
-#include "application.h"
+#include "Particle.h"
 #line 1 "/home/faraday/git_repos/ParticleRemote-PhotonCode/src/Particle_Remote.ino"
 //#include "DHT22_test/PietteTech_DHT.h"  // Uncomment if building in IDE
 #include "PietteTech_DHT.h"  // Uncommend if building using CLI
@@ -49,9 +49,11 @@ PietteTech_DHT DHT(DHTPIN, DHTTYPE);
 //Cloud Variable
 double tempCloud = -100;
 double humiCloud = -100;
+double honeywellCurrentTemp = -1;
 String temperatureValuesChain = "";
 String humidityValuesChain = "";
 String setFuturTemperatureCommand = "";
+int DhtResultVal;
 
 
 //Global variables
@@ -70,6 +72,8 @@ void setup()
     Particle.variable("humidity", humiCloud);
     Particle.variable("tempRec", temperatureValuesChain);
     Particle.variable("humiRec", humidityValuesChain);
+    Particle.variable("DHTresult", DhtResultVal);
+    Particle.variable("HoneyTemp", honeywellCurrentTemp);
 
     Particle.function("toggleRelay", toggleRelay);
     Particle.function("setTempHoney", setTemperatureHoneywell);
@@ -115,11 +119,16 @@ void getDHT22valuesTimerCallback ()
 void getDHT22values ()
 {
   //TODO: catch DHT errors and stop timer? or ignore all error?
-  int result = DHT.acquireAndWait(1000);
+  int DhtResultVal = DHT.acquireAndWait(2000);
   //Serial.println(result);
 
   tempCloud = (double) DHT.getCelsius();
   humiCloud = (double) DHT.getHumidity();
+
+  if(tempCloud == DHTLIB_ERROR_ACQUIRING && humiCloud == DHTLIB_ERROR_ACQUIRING)
+  {
+    DHT.begin();
+  }
 }
 
 
@@ -204,7 +213,7 @@ int setTemperatureHoneywell(String command)
 {
   String automaticFlag = "x";
   String targetTempStr = "x";
-  int targetTemp;
+  int targetTemp = 0;
   int delimeterIndex;
 
   delimeterIndex = command.lastIndexOf(",");
@@ -217,6 +226,7 @@ int setTemperatureHoneywell(String command)
     automaticFlag = command.substring(delimeterIndex + 1, delimeterIndex + 2);
     targetTempStr = command.substring(0, delimeterIndex);
     targetTemp = atoi(targetTempStr);
+    honeywellCurrentTemp = targetTemp;
   }
 
   Serial.println(targetTemp);
